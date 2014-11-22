@@ -20,7 +20,7 @@
     "app"
   ],
   "keywords": [
-    "yeoman-generator"
+    "yeoman-generator","mljs","mldb","marklogic","nosql","javascript"
   ],
   "dependencies": {
     "yeoman-generator": "^0.17.0",
