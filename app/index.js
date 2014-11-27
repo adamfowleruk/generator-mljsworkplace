@@ -25,57 +25,57 @@ var MljsworkplaceGenerator = yeoman.generators.Base.extend({
     ));
 
     var prompts = [{
-      type: 'confirm',
+      type: 'input',
       name: 'resthostname',
       message: 'The MarkLogic database server hostname or IP Address',
       default: 'localhost'
     },{
-      type: 'confirm',
+      type: 'input',
       name: 'restport',
       message: 'The port of the REST API instance on MarkLogic Server to use or create',
       default: 7001
     },{
-      type: 'confirm',
+      type: 'input',
       name: 'restcreate',
       message: 'Create the REST API instance, and content and modules databases?',
       default: true
     },{
-      type: 'confirm',
+      type: 'input',
       name: 'appname',
       message: 'Application name (will be used to create appname-content, appname-modules databases)',
       default: this.appname
     },{
-      type: 'confirm',
+      type: 'input',
       name: 'mladminuser',
       message: 'MarkLogic admin username to create and configure application',
       default: "admin"
     },{
-      type: 'confirm',
+      type: 'input',
       name: 'mladminpass',
       message: 'MarkLogic admin password to create and configure application',
       default: "admin"
     },{
-      type: 'confirm',
+      type: 'input',
       name: 'mldefaultuser',
       message: 'Default user for web application before authentication',
       default: "nobody"
     },{
-      type: 'confirm',
+      type: 'input',
       name: 'mlauth',
       message: 'Authentication to use for MarkLogic (digest, basic, application)',
       default: "digest"
     },{
-      type: 'confirm',
+      type: 'input',
       name: 'mlcp',
       message: 'Path to MLCP on the local machine',
       default: "/Users/adamfowler/Documents/marklogic/software/mlcp-Hadoop2-1.2-1/bin/mlcp.sh"
     },{
-      type: 'confirm',
+      type: 'input',
       name: 'webserverport',
       message: 'The MLJS Web Server Node.js application\'s web app port',
       default: 5001
     },{
-      type: 'confirm',
+      type: 'input',
       name: 'alertserverport',
       message: 'The MLJS Web Server Node.js alert receiving server port',
       default: 5002
@@ -109,15 +109,19 @@ var MljsworkplaceGenerator = yeoman.generators.Base.extend({
       this.src.copy('files/bower.json', 'bower.json');
 
       this.directory('files/src','app');
-      this.src.copy('files/add-search-options.sh','add-search-options.sh');
-      this.src.copy('files/all.xml','all.xml');
+      this.directory('files/rest-api','rest-api');
+      this.directory('files/config','config');
+      this.directory('files/util','util');
+      //this.src.copy('files/add-search-options.sh','add-search-options.sh');
+      //this.src.copy('files/all.xml','all.xml');
       this.src.copy('files/capture-workplace.sh','capture-workplace.sh');
-      this.src.copy('files/create-rest-server.sh','create-rest-server.sh');
-      this.src.copy('files/install-extensions.sh','install-extensions.sh');
-      this.src.copy('files/install-workplace.sh','install-workplace.sh');
-      this.src.copy('files/mljs-webserver.js','mljs-webserver.js');
-      this.src.copy('files/run-mljs-webserver.js','run-mljs-webserver.js');
-      this.src.copy('files/run-webserver.sh','run-webserver.sh');
+      //this.src.copy('files/create-rest-server.sh','create-rest-server.sh');
+      //this.src.copy('files/install-extensions.sh','install-extensions.sh');
+      //this.src.copy('files/install-workplace.sh','install-workplace.sh');
+      //this.src.copy('files/mljs-webserver.js','mljs-webserver.js');
+      //this.src.copy('files/run-mljs-webserver.js','run-mljs-webserver.js');
+      this.src.copy('files/mljsserve','mljsserve');
+      this.src.copy('files/mljsadmin','mljsadmin');
       //this.src.copy('webserver-settings.sh','webserver-settings.sh');
 
       // overwrite webserver-settings.sh to have correct app server settings
@@ -132,12 +136,21 @@ var MljsworkplaceGenerator = yeoman.generators.Base.extend({
       settings +=    "MLDEFAULTUSER=" + this.config.mldefaultuser + "\n";
       settings +=    "WEBPORT=" + this.config.webserverport + "\n";
       settings +=    "ALERTPORT=" + this.config.alertserverport + "\n";
-      settings +=    "APPAPTH=./app\n";
+      settings +=    "APPPATH=./app\n";
       settings +=    "DEFAULTPATH=/workplace.html5\n";
       settings +=    "MLCP=" + this.config.mlcp + "\n";
 
-      this.dest.write('webserver-settings.sh',settings);
+      this.dest.write('config/webserver-settings.sh',settings);
 
+      var env = {
+        host: this.config.resthostname, port: this.config.restport, database: this.config.appname + "-content",
+        username: this.config.mladminuser, password: this.config.mladminpass, auth: this.config.mlauth,
+        defaultuser: this.config.mldefaultuser, webport: this.config.webserverport, alertport: this.config.alertserverport,
+        apppath: "./app", defaultpath: "/workplace.html5", modulesport: this.config.restport - 1,
+        modulesdatabase: this.config.appname + "-modules",
+        ssl: false, adminport: 8002
+      };
+      this.dest.write('config/env.js',"module.exports = " + JSON.stringify(env));
 
       this.log("finished copying app files");
     },
@@ -157,10 +170,11 @@ var MljsworkplaceGenerator = yeoman.generators.Base.extend({
     // Now run set up scripts, if required
     if (true === this.config.restcreate) {
       this.log("Creating rest api instance...");
+      this.spawnCommand('./mljsadmin',['install']);
     }
 
     // this.spawnCommand('composer', ['install']); -> to fire off shell scripts
-    this.log("Finishing end");
+    //this.log("Finishing end");
   }
 });
 
