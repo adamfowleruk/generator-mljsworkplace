@@ -46,6 +46,36 @@ This package contains the MLJS Workplace application generator. You get several 
 - All settings in the data/env.js file for your environment
 - All from the comfort of Node.js!
 
+#### How to use mljsadmin
+
+mljsadmin allows you to install and configure your entire app in a single hit! Simply:-
+
+```bash
+chmod u+x mljsadmin
+./mljsadmin install
+```
+
+To see all the functions this command can do (which are many!), type
+
+```bash
+./mljsadmin
+```
+
+#### How to use mljsserve
+
+mljsserve starts the MLJS Web and Alert Server for your MLJS Workplace app! To start this type:-
+
+```bash
+chmod u+x ./mljsserve
+./mljsserve
+```
+
+#### You're all set!
+
+Now visit http://localhost:7001/index.html5 to see the application!!!
+
+That's you ready to go with the MLJS Workplace app!!!
+
 ### Getting To Know Yeoman
 
 Yeoman has a heart of gold. He's a person with feelings and opinions, but he's very easy to work with. If you think he's too opinionated, he can be easily convinced.
