@@ -122,6 +122,8 @@ var MljsworkplaceGenerator = yeoman.generators.Base.extend({
       //this.src.copy('files/run-mljs-webserver.js','run-mljs-webserver.js');
       this.src.copy('files/mljsserve','mljsserve');
       this.src.copy('files/mljsadmin','mljsadmin');
+      this.src.copy('files/mljsserve.bat','mljsserve.bat');
+      this.src.copy('files/mljsadmin.bat','mljsadmin.bat');
       //this.src.copy('webserver-settings.sh','webserver-settings.sh');
 
       // overwrite webserver-settings.sh to have correct app server settings

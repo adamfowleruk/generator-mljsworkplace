@@ -35,6 +35,17 @@ Finally, initiate the generator:
 yo mljsworkplace
 ```
 
+### The MLJS Workplace Generator
+
+This package contains the MLJS Workplace application generator. You get several things when you do yo mljsworkplace:-
+
+- You are prompted for your MarkLogic server's and application's configuration settings (with sensible defaults provided)
+- The MLJS Workplace webapp in the app/ folder
+- The mljsadmin command to install, update, capture settings, and remove an application, extensions, search options and app servers from MarkLogic, and install and remove content
+- The mljsserve command to start an advanced, MarkLogic alerting aware and WebSockets compatible, Node.js webserver for the MLJS Workplace app
+- All settings in the data/env.js file for your environment
+- All from the comfort of Node.js!
+
 ### Getting To Know Yeoman
 
 Yeoman has a heart of gold. He's a person with feelings and opinions, but he's very easy to work with. If you think he's too opinionated, he can be easily convinced.
