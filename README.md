@@ -70,6 +70,31 @@ chmod u+x ./mljsserve
 ./mljsserve
 ```
 
+#### Loading content
+
+By default the mljsadmin install loads content as specified in the ./data/.initial.json file, if it exists. You can
+also create any folder and place a .load.json file in there, and tell mljsadmin to load that folder:-
+
+```bash
+./mljsadmin load
+```
+
+Or to load a specific folder (with its settings from .load.json in the same folder):-
+
+```bash
+./mljsadmin --load=folder -f ./data/some/folder/somewhere
+```
+
+
+The format of the settings for .initial.json and .load.json is the same:-
+
+```json
+{
+  "folder": folder || "./data", "recursive": true, "ignore": [".load.json", ".initial.json"],
+  "prefix": "/", "stripBaseFolder": true, "collections": ["col1","col2"]
+}
+```
+
 #### You're all set!
 
 Now visit http://localhost:7001/index.html5 to see the application!!!
