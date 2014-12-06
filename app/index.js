@@ -64,12 +64,12 @@ var MljsworkplaceGenerator = yeoman.generators.Base.extend({
       name: 'mlauth',
       message: 'Authentication to use for MarkLogic (digest, basic, application)',
       default: "digest"
-    },{
+    },/*{
       type: 'input',
       name: 'mlcp',
       message: 'Path to MLCP on the local machine',
       default: "/Users/adamfowler/Documents/marklogic/software/mlcp-Hadoop2-1.2-1/bin/mlcp.sh"
-    },{
+    },*/{
       type: 'input',
       name: 'webserverport',
       message: 'The MLJS Web Server Node.js application\'s web app port',
@@ -109,12 +109,15 @@ var MljsworkplaceGenerator = yeoman.generators.Base.extend({
       this.src.copy('files/bower.json', 'bower.json');
 
       this.directory('files/src','app');
+      this.directory('files/modules','modules');
       this.directory('files/rest-api','rest-api');
       this.directory('files/config','config');
       this.directory('files/util','util');
+      this.directory('files/data','data');
+      this.directory('files/packages','packages');
       //this.src.copy('files/add-search-options.sh','add-search-options.sh');
       //this.src.copy('files/all.xml','all.xml');
-      this.src.copy('files/capture-workplace.sh','capture-workplace.sh');
+      //this.src.copy('files/capture-workplace.sh','capture-workplace.sh');
       //this.src.copy('files/create-rest-server.sh','create-rest-server.sh');
       //this.src.copy('files/install-extensions.sh','install-extensions.sh');
       //this.src.copy('files/install-workplace.sh','install-workplace.sh');
@@ -140,7 +143,7 @@ var MljsworkplaceGenerator = yeoman.generators.Base.extend({
       settings +=    "ALERTPORT=" + this.config.alertserverport + "\n";
       settings +=    "APPPATH=./app\n";
       settings +=    "DEFAULTPATH=/workplace.html5\n";
-      settings +=    "MLCP=" + this.config.mlcp + "\n";
+      settings +=    "MLCP=" + (this.config.mlcp||"") + "\n";
 
       this.dest.write('config/webserver-settings.sh',settings);
 
@@ -170,10 +173,13 @@ var MljsworkplaceGenerator = yeoman.generators.Base.extend({
     this.installDependencies();
 
     // Now run set up scripts, if required
+    /*
     if (true === this.config.restcreate) {
       this.log("Creating rest api instance...");
       this.spawnCommand('./mljsadmin',['install']);
     }
+    */
+    // CANNOT run above as deps not installed yet
 
     // this.spawnCommand('composer', ['install']); -> to fire off shell scripts
     //this.log("Finishing end");
