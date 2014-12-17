@@ -46,6 +46,11 @@ var MljsworkplaceGenerator = yeoman.generators.Base.extend({
       default: this.appname
     },{
       type: 'input',
+      name: 'triggersdatabase',
+      message: 'Trigger database',
+      default: 'Triggers'
+    },{
+      type: 'input',
       name: 'mladminuser',
       message: 'MarkLogic admin username to create and configure application',
       default: "admin"
@@ -153,7 +158,7 @@ var MljsworkplaceGenerator = yeoman.generators.Base.extend({
         defaultuser: this.config.mldefaultuser, webport: this.config.webserverport, alertport: this.config.alertserverport,
         apppath: "./app", defaultpath: "/workplace.html5", modulesport: this.config.restport - 1,
         modulesdatabase: this.config.appname + "-modules",
-        ssl: false, adminport: 8002
+        ssl: false, adminport: 8002, triggersdatabase: this.config.triggersdatabase
       };
       this.dest.write('config/env.js',"module.exports = " + JSON.stringify(env));
 
