@@ -12,6 +12,9 @@
     "colors": "^1.0.3",
     "stack-trace": "^0.0.9",
     "safefs": "^3.1.1",
-    "isstream": "^0.1.0"
+    "isstream": "^0.1.0",
+    "underscore": "~1.1.7",
+    "websocket": "~1.0.14",
+    "restify": "~2.8.4"
   }
 }
