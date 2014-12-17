@@ -1,6 +1,6 @@
 {
   "name": "generator-mljsworkplace",
-  "version": "1.7.0",
+  "version": "1.7.1",
   "description": "Yeoman generator for the MLJS Workplace application",
   "license": "Apache 2",
   "main": "app/index.js",
@@ -26,7 +26,7 @@
     "yeoman-generator": "^0.17.0",
     "chalk": "^0.5.0",
     "yosay": "^0.3.0",
-    "mljs": "^1.7.0"
+    "mljs": "^1.7.1"
   },
   "devDependencies": {
     "mocha": "*"
