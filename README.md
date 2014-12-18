@@ -26,6 +26,7 @@ Yeoman travels light. He didn't pack any generators when he moved in. You can th
 To install generator-mljsworkplace from npm, run:
 
 ```bash
+npm install -g yo
 npm install -g generator-mljsworkplace
 ```
 
@@ -53,7 +54,10 @@ mljsadmin allows you to install and configure your entire app in a single hit! S
 ```bash
 chmod u+x mljsadmin
 ./mljsadmin install
+./mljsadmin update
 ```
+
+(The update line is only required due to a temporary bug.)
 
 To see all the functions this command can do (which are many!), type
 
@@ -90,7 +94,7 @@ The format of the settings for .initial.json and .load.json is the same:-
 
 ```json
 {
-  "folder": folder || "./data", "recursive": true, "ignore": [".load.json", ".initial.json"],
+  "folder": "./data", "recursive": true, "ignore": [".load.json", ".initial.json"],
   "prefix": "/", "stripBaseFolder": true, "collections": ["col1","col2"]
 }
 ```
