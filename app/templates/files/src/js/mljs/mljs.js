@@ -112,7 +112,8 @@ if (typeof(window) === 'undefined') {
  */
 
 var defaultdboptions = {
-  host: "localhost", port: 9090, adminport: 8002, ssl: false, auth: "digest", username: "admin",password: "admin", database: "mldbtest", searchoptions: {}, fastthreads: 10, fastparts: 100
+  host: "localhost", port: 9090, adminport: 8002, ssl: false, auth: "digest", username: "admin",
+  password: "admin", database: "mldbtest", searchoptions: {}, fastthreads: 10, fastparts: 100, proxyhost: null, proxyport: null
 }; // TODO make Documents the default db, automatically figure out port when creating new rest server
 
 
@@ -668,7 +669,10 @@ mljs.prototype.configure = function(dboptions) {
   // TODO abandon transaction if one exists
   // TODO kill in process http requests
 
-  this.dboptions = defaultdboptions;
+  this.dboptions = {};
+  for (var a in defaultdboptions) {
+    this.dboptions[a] = defaultdboptions[a];
+  }
   if (undefined != dboptions) {
     for (var a in dboptions) {
       this.dboptions[a] = dboptions[a];
@@ -840,6 +844,17 @@ mljs.prototype.__doreq_node = function(reqname,options,content,callback_opt) {
     }
   }
 
+  // proxy check
+  if (null != this.dboptions.proxyhost && null != this.dboptions.proxyport) {
+    options.path = "http://" + this.dboptions.host + ":" + this.dboptions.port + options.path;
+    options.host = this.dboptions.proxyhost;
+    options.port = this.dboptions.proxyport;
+    if (undefined == options.headers) {
+      options.headers = {};
+    }
+    options.headers["Host"] = this.dboptions.host;
+  }
+
   var completeRan = false; // declared here incase of request error
 
   // add Connection: keep-alive
@@ -854,7 +869,31 @@ mljs.prototype.__doreq_node = function(reqname,options,content,callback_opt) {
     options.headers["Content-Type", ct];
   }
 
-  var httpreq = wrapper.request(options, function(res) {
+  //var fd = require("form-data");
+  var mh = require("./lib/multipart");
+
+  if (Array.isArray(content)) {
+    self.logger.debug("__doreq_node: Sending multipart/mime (multiple files) content to server");
+    // TODO add sanity check for multipart/mime content type
+
+    self.logger.debug("__doreq_node: Creating FormData instance");
+    //var formData = new fd();
+    var multi = new mh();
+    for (var i = 0, maxi = content.length,uri,blob,mime;i < maxi;i+=3) {
+      uri = content[i];
+      blob = content[i + 1];
+      mime = content[i + 2];
+      self.logger.debug("__doreq_node: Appending form file URI: " + uri);
+      multi.append(uri,blob,mime); // each blob has its own mime type
+    }
+    content = multi;
+    //self.logger.debug("__doreq_node: Calling request.write(formData)");
+    //httpreq.write(formData); // TODO verify this is not send() instead (xhr2.send)
+    //self.logger.debug("__doreq_node: request.write(formData) has completed");
+  }
+
+
+  var httpreq = wrapper.request(options, content, function(res) {
     var body = "";
     //self.logger.debug("---- START " + reqname);
     //self.logger.debug(reqname + " In Response");
@@ -871,7 +910,7 @@ mljs.prototype.__doreq_node = function(reqname,options,content,callback_opt) {
         completeRan = true; // idiot check - complete can be called from many places and events
         self.logger.debug(reqname + " complete()");
         var codeSub = res.statusCode.toString().substring(0,1);
-        self.logger.debug("statuscode: " + res.statusCode + ", codesub: " + codeSub);
+        //self.logger.debug("statuscode: " + res.statusCode + ", codesub: " + codeSub);
 /*
         for (var p in res) {
           var pv = res[p];
@@ -881,7 +920,7 @@ mljs.prototype.__doreq_node = function(reqname,options,content,callback_opt) {
         }*/
         self.logger.debug("RESPONSE BODY: " + body);
         if (codeSub == ("4") || codeSub == ("5")) {
-          self.logger.debug(reqname + " error: " + body);
+          //self.logger.debug(reqname + " error: " + body);
           var details = body;
           if ("string" == typeof body) {
             if (body.substring(0,1) == "{") {
@@ -951,12 +990,19 @@ mljs.prototype.__doreq_node = function(reqname,options,content,callback_opt) {
     //console.log("request content is of type: " + typeof(content));
     //console.log("is Buffer?: " + Buffer.isBuffer(content));
     if ("string" == typeof (content) || Buffer.isBuffer(content)) { // Node.js fix for buffers accidentally being converted to JSON
+      self.logger.debug("__doreq_node: Sending String or Buffer content to server");
+      self.logger.debug("__doreq_node: isBuffer?: " + Buffer.isBuffer(content));
       httpreq.write(content);
+    } else if (content instanceof mh) {
+      httpreq.write(content);
+
     } else if ("object" == typeof(content)) {
       if (undefined != content.nodeType) {
+        self.logger.debug("__doreq_node: Sending XML content to server");
         // XML
         httpreq.write((new XMLSerializer()).serializeToString(content));
       } else {
+        self.logger.debug("__doreq_node: Sending JSON content to server");
         // JSON
         try {
           httpreq.write(JSON.stringify(content));
@@ -967,6 +1013,7 @@ mljs.prototype.__doreq_node = function(reqname,options,content,callback_opt) {
       }
     }
   }
+  self.logger.debug("__doreq_node: Calling request.end()");
   httpreq.end();
 };
 
@@ -1113,6 +1160,22 @@ mljs.prototype.create = function(options_opt,callback_opt) {
   };
 
   this.__doreq("CREATE",options,json,callback_opt);
+};
+
+/**
+ * Lists all available databases on the server. NOTE: Uses admin port rather than content port
+ * @param {function} callback - The callback to invoke after the method completes
+ */
+mljs.prototype.databases = function(callback) {
+  var self = this;
+  var options = {
+    host: self.dboptions.host,
+    port: self.dboptions.adminport,
+    path: "/manage/v2/databases",
+    method: "GET"
+  };
+
+  this.__doreq("DATABASES", options, null, callback);
 };
 
 /**
@@ -3034,6 +3097,147 @@ mljs.prototype.saveAll = function(doc_array,uri_array_opt,callback_opt) {
   }
 };
 
+/**
+ * Saves all documents in as parallel a fashion as possible - using multiple threads and several documents per call.
+ */
+mljs.prototype.saveAllParallel = function(doc_array,uri_array,mime_array,transaction_size,thread_count,props,callback,progress_callback) {
+  // split in to buckets (done virtually so as not to use too much memory)
+  this.logger.debug("saveAllParallel(): doc_array.length: " + doc_array.length + ", txsize: " + transaction_size + ", threads: " + thread_count);
+  // track which thread has been assigned which bucket
+  var self = this;
+  var dosave = function(startidx,endidx,save_callback) {
+    self.logger.debug("dosave(): startidx: " + startidx + ", endidx: " + endidx);
+    // actually does a POST /v1/documents
+    var myArr = new Array();
+    for (var i = startidx;i <= endidx;i++) {
+      myArr.push(uri_array[i]);
+      myArr.push(doc_array[i]);
+      myArr.push(mime_array[i]);
+    }
+    var options = {
+      path: "/v1/documents",
+      method: 'POST',
+      contentType: "multipart/mixed",
+      headers: {"Accept": "application/json"}
+    };
+    var gotQn = false;
+    // TODO handle collection and other propertiesif (undefined != props_opt.collection)
+    if (undefined != props.collection) {
+      var cols = props.collection.split(",");
+      for (var c = 0;c < cols.length;c++) {
+        if (gotQn) {
+          options.path += "&";
+        } else {
+          gotQn = true;
+          options.path += "?";
+        }
+        options.path += "collection=" + encodeURIComponent(cols[c]);
+      }
+    }
+    //if (undefined != props.contentType)
+      // TODO set this on UNDERLYING document from type_array
+//      contentType = props_opt.contentType;
+    //
+    if (undefined != props.permissions) {
+      // array of {role: name, permission: read|update|execute} objects
+      for (var p = 0;p < props.permissions.length;p++) {
+        if (gotQn) {
+          options.path += "&";
+        } else {
+          gotQn = true;
+          options.path += "?";
+        }
+        options.path += "perm:" + props.permissions[p].role + "=" + props.permissions[p].permission;
+      }
+    }
+    self.__doreq("SAVEALLPARALLEL",options,myArr,save_callback);
+  };
+  var nextBucket = 0;
+  var bucketsCompleted = 0;
+  var maxBucket = Math.ceil(doc_array.length / transaction_size);
+  /*
+  if ((maxBucket * transaction_size) < doc_array.length) {
+    maxBucket++; // partial bucket at end
+  }*/
+
+  var returned = false;
+  var fail = function(failedResult) {
+    self.logger.debug("fail()");
+    returned = true;
+    callback(failedResult);
+  };
+  var complete = function() {
+    self.logger.debug("complete()");
+    if (!returned) {
+      callback({inError: false, docuris: uri_array});
+    }
+  };
+
+  // NB bucketid is zero based
+  var dobucket = function(bucketid,bucket_callback) {
+    self.logger.debug("dobucket(): bucketid: " + bucketid);
+    // note possible that startidx will be greater than doc_array length - if we have more threads than we do buckets
+    var startidx = bucketid * transaction_size;
+    if (startidx >= doc_array.length) {
+      self.logger.debug("docbucket(): startidx is out of range - thread can now complete. Returning failure result.");
+      bucket_callback({inError: true, details: "OUTOFRANGE"});
+    } else {
+      var endidx = startidx + transaction_size - 1;
+      if (endidx >= doc_array.length) {
+        endidx = doc_array.length - 1;
+      }
+      dosave(startidx,endidx,bucket_callback);
+    }
+  };
+  var assignToThread = function(theThread,initial_opt) {
+    self.logger.debug("assignToThread(): threadid: " + theThread.id);
+    if (true !== initial_opt) {
+      bucketsCompleted++;
+    }
+    // find next unassigned bucket and call theThread.process()
+    if (!returned) {
+      self.logger.debug("calling progress function callback");
+      (progress_callback||noop)(100 * (bucketsCompleted / maxBucket));
+      if (bucketsCompleted >= maxBucket) {
+        self.logger.debug("calling complete()");
+        complete();
+      } else {
+        self.logger.debug("calling process for next bucket(): " + nextBucket);
+        theThread.process(nextBucket++);
+      }
+    }
+  };
+  var thread = function(id) {
+    self.logger.debug("thread() constructor: threadid: " + id);
+    this.id = id;
+    var me = this;
+    this.process = function(bucketid) {
+      self.logger.debug("process(): bucketid: " + bucketid);
+      dobucket(bucketid,function(result) {
+        if (result.inError) {
+          if (result.details == "OUTOFRANGE") {
+            // silently complete, with no callback, and await the group's primary thread to complete
+          } else {
+            self.logger.debug("dobucket is in error");
+            fail(result);
+          }
+        } else {
+          self.logger.debug("dobucket succeeded");
+          assignToThread(me);
+        }
+      });
+    };
+  };
+  // create and assign threads
+  for (var tc = 0;tc < thread_count;tc++) {
+    self.logger.debug("creating thread with id: " + tc);
+    var theThread = new thread(tc);
+    assignToThread(theThread,true);
+  }
+  self.logger.debug("All threads created");
+
+};
+
 var rv = function(totalruns,maxrunning,start_func,finish_func,complete_func) {
   this.running = 0;
   this.runnercount = 0;
@@ -3598,6 +3802,11 @@ mljs.prototype.workplace = function(callback) {
 
 
 
+/**
+ * Uses the triggers.xqy REST extension to install a trigger
+ * @param {object} triggerJson - The trigger description JSON (as expected by the REST API)
+ * @param {function} callback - The callback function
+ */
 mljs.prototype.installTrigger = function(triggerJson,callback) {
   var options = {
     path: "/v1/resources/triggers",
@@ -3607,6 +3816,26 @@ mljs.prototype.installTrigger = function(triggerJson,callback) {
   this.__doreq("INSTALLTRIGGER",options,triggerJson,callback);
 };
 
+/**
+ * Uses the triggers.xqy REST extension to list all triggers for this content database's triggers database that also
+ *   use code installed in the current database's modules database (double sanity check)
+ * @param {function} callback - The callback function
+ */
+mljs.prototype.triggers = function(callback) {
+  var options = {
+    path: "/v1/resources/triggers",
+    method: "GET"/*,
+    accept: "application/json"*/
+  };
+  this.__doreq("TRIGGERS",options,null,callback);
+};
+
+/**
+ * Uses the triggers.xqy REST extension to remove a named trigger configuration from the specified triggers database
+ * @param {string} triggerName - The name of the trigger
+ * @param {string} triggerDatabase - The name of the trigger database to remove the trigger from
+ * @param {function} callback - The callback function
+ */
 mljs.prototype.removeTrigger = function(triggerName,triggerDatabase,callback) {
   /*var doc = {
     triggername: triggerName, triggersdatabase: triggerDatabase
@@ -3621,7 +3850,7 @@ mljs.prototype.removeTrigger = function(triggerName,triggerDatabase,callback) {
   this.__doreq("REMOVETRIGGER",options,null,callback);
 };
 
-
+// TODO support JavaScript extensions too
 mljs.prototype.installExtension = function(name,methodArray,moduleContent,callback) {
   var options = {
     path: "/v1/config/resources/" + name,
